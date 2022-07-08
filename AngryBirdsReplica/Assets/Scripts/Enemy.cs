@@ -9,6 +9,8 @@ public class Enemy : MonoBehaviour {
 	public float health = 4f;
 
 	public static int EnemiesAlive = 0;
+	
+	public static int RewardGiven = 0;
 
 	void Start ()
 	{
@@ -28,6 +30,8 @@ public class Enemy : MonoBehaviour {
 		Instantiate(deathEffect, transform.position, Quaternion.identity);
 
 		EnemiesAlive--;
+
+		RewardGiven++;
 		if (EnemiesAlive <= 0)
 			Debug.Log("LEVEL WON!");
 
