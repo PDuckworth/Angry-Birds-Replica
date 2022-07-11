@@ -9,91 +9,60 @@ using Unity.MLAgents.Actuators;
 public class Ball : Agent {
 
 	public Rigidbody2D rb;
+
 	public Rigidbody2D hook;
 
 	public float releaseTime = .15f;
+
+	public float waitForEffectTime = 3.0f;
+
 	public float maxDragDistance = 2f;
 
-	public GameObject nextBall;
+	private int numberOfThrows = 3; 
 
-	private bool isPressed = false;
+	private int throwNumber = 0; 
 
-	public int NumberofEnemies = 0; 
+	private bool isPressed = false; 
 
-	[SerializeField] private Transform enemyTransform;
+	public int collectReward = 0;
 
-	public override void OnEpisodeBegin() {
-		
-		// public int EnemiesAlive = Enemy.EnemiesAlive; 
-		Debug.Log("OnEpisodeBegin");
-		Debug.Log("Enemies Alive = " + Enemy.EnemiesAlive);
+	private int numberofEnemies = 3; 
 
-		NumberofEnemies = Enemy.EnemiesAlive;
+	public static int EnemiesAlive;
+	
+	// public overide OnEpisodeBegin() {
 
+	// 	// Debug.Log("OnEpisodeBegin");
+	// 	// ResetBall();
+
+	// 	// int numberofEnemies = Enemy.EnemiesAlive;
+	// 	// Debug.Log("Enemies Alive = " + numberofEnemies);
+
+	// 	// Debug.Log("request next decision");
+	// 	// this.RequestDecision();
+	// }
+
+	void RestartEpisode() { 
+		Debug.Log("Restart Episode");
+		ResetBall();
+		SetReward(0);
+		numberofEnemies = 3; 
+		throwNumber = 1;
 	}
 
-	public override void CollectObservations(VectorSensor sensor) {
-		sensor.AddObservation(transform.position);
-		sensor.AddObservation(enemyTransform.position);
 
-		// Debug.Log("agent pos = " + transform.position);
-		Debug.Log("enemies alive = " + Enemy.EnemiesAlive);
-		Debug.Log("enemy pos = " + enemyTransform.position);
-	}
-
-	public override void Heuristic (in ActionBuffers actionsOut) {
-		ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
-
+	void Update ()
+	{
 		if (isPressed)
-			{
-				Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		{
+			Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-				if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
-					rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
-				else
-					rb.position = mousePos;
-
-				continuousActions[0] = mousePos[0];
-				continuousActions[1] = mousePos[1];
-			}
+			if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
+				rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
+			else
+				rb.position = mousePos;	
 		}
 
-	// public override void OnActionReceived(ActionBuffers actions) {
-
-	// 	rb.isKinematic = true;
-	// 	Vector2 action; 
-	// 	float moveX = actions.ContinuousActions[0];
-	// 	float moveY = actions.ContinuousActions[1];
-	// 	action = new Vector2(moveX, moveY);
-
-	// 	if (Vector3.Distance(action, hook.position) > maxDragDistance)
-	// 		rb.position = hook.position + (action - hook.position).normalized * maxDragDistance;
-	// 	else
-	// 		rb.position = action;
-
-	// 	Debug.Log("Action = " + action); 			
-	// 	GetComponent<SpringJoint2D>().enabled = false;
-		
-	// 	RewardAgent();
-	// }
-
-	// void Update ()
-	// {
-	// 	if (isPressed)
-	// 	{
-	// 		Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-	// 		if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
-	// 			rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
-	// 		else
-	// 			rb.position = mousePos;
-	// 	}
-	// }
-
-	void RewardAgent() {
-		int reward = NumberofEnemies - Enemy.EnemiesAlive;
-		Debug.Log("Give reward = " + reward);
-		AddReward(reward); 
 	}
 
 	void OnMouseDown ()
@@ -108,26 +77,74 @@ public class Ball : Agent {
 		rb.isKinematic = false;
 
 		StartCoroutine(Release());
+		StopCoroutine(Release());
+	}
+
+
+	void ResetBall(){
+
+		// reset ball position
+		rb.velocity = Vector2.zero;
+		rb.angularVelocity = 0f;
+		rb.position = hook.position;
+
+		// reattach the spring
+		GetComponent<SpringJoint2D>().enabled = true;
+		this.enabled = true;
+	}
+
+	void RewardAgent() {
+		Debug.Log("reward");
+		Debug.Log("NumberofEnemies = " + numberofEnemies);
+		Debug.Log("Enemies Alive = " + Enemy.EnemiesAlive);
+
+		int reward =  numberofEnemies - Enemy.EnemiesAlive; 
+		Debug.Log("Set reward = " + reward);
+		SetReward(reward); 
 	}
 
 	IEnumerator Release ()
 	{
-		yield return new WaitForSeconds(releaseTime);
+		Debug.Log("throw...");
 
+		// After the action is taken: Release the spring
+		yield return new WaitForSeconds(releaseTime);
 		GetComponent<SpringJoint2D>().enabled = false;
 		this.enabled = false;
-
-		yield return new WaitForSeconds(2f);
-
-		if (nextBall != null)
-		{
-			nextBall.SetActive(true);
-		} else
-		{
-			Enemy.EnemiesAlive = 0;
+		
+		// wait for effect, then reset the ball position
+		yield return new WaitForSeconds(waitForEffectTime);
+		
+		throwNumber+=1;
+		RewardAgent();
+		ResetBall();
+		
+		if (throwNumber>=numberOfThrows){
+			Debug.Log("End Episode");
+			EndEpisode();
+			RestartEpisode();
+			// Enemy.EnemiesAlive = 0;
 			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 		}
-	
+
+
+		// if (nextBall != null)
+		// {
+		// 	nextBall.SetActive(true);
+		// } else
+		// {
+		// 	Enemy.EnemiesAlive = 0;
+		// 	SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		// }
 	}
+	
+
+		// if (Enemy.EnemiesAlive <= 0) { 
+		// 	SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+		// }
+
+
+	
+	// }
 
 }
