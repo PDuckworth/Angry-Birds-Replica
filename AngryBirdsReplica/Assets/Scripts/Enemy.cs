@@ -15,6 +15,7 @@ public class Enemy : MonoBehaviour {
 	void Start ()
 	{
 		EnemiesAlive++;
+		Debug.Log("start enemy " + EnemiesAlive);
 	}
 
 	void OnCollisionEnter2D (Collision2D colInfo)
