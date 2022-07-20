@@ -33,8 +33,6 @@ public class Enemy : MonoBehaviour {
 		EnemiesAlive--;
 
 		RewardGiven++;
-		if (EnemiesAlive <= 0)
-			Debug.Log("LEVEL WON!");
 
 		Destroy(gameObject);
 	}

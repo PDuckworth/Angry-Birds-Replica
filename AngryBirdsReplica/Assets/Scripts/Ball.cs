@@ -53,7 +53,7 @@ public class Ball : Agent {
 
 		Debug.Log("enemy1 " +enemy1.position);
 		Debug.Log("enemy2 " +enemy2.position);
-	} 
+	}
 
 	 public override void OnEpisodeBegin() {
 		if (episodeNeedsStarting){
@@ -61,7 +61,6 @@ public class Ball : Agent {
 			ResetBall();
 			throwNumber = 0;
 			SetReward(0);
-			Enemy.EnemiesAlive = 0;
 			int numberofEnemies = 2;
 			Debug.Log("n Enemies = " + numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
 
@@ -173,8 +172,7 @@ public class Ball : Agent {
 	}
 
 
-	IEnumerator Release ()
-	{
+	IEnumerator Release () {
 		Debug.Log("throw...");
 
 		// After the action is taken: Release the spring
@@ -196,28 +194,11 @@ public class Ball : Agent {
 		if (throwNumber==numberOfThrows){
 			Debug.Log("End Episode");
 			episodeNeedsStarting = true;
-			EndEpisode();
+			Enemy.EnemiesAlive = 0;
+
+			EndEpisode(); // Auto starts another Episode
 			// SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 		}
 	}
-
-		// if (nextBall != null)
-		// {
-		// 	nextBall.SetActive(true);
-		// } else
-		// {
-		// 	Enemy.EnemiesAlive = 0;
-		// 	SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-		// }
-	
-	
-
-		// if (Enemy.EnemiesAlive <= 0) { 
-		// 	SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-		// }
-
-
-	
-	// }
 
 }
