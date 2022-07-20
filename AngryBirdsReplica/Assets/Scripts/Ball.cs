@@ -37,7 +37,7 @@ public class Ball : Agent {
 
  	public bool useVecObs;
 
-	public static ActionSegment<float> previousAction;
+	ActionSegment<float> previousAction = ActionSegment<float>.Empty;
 
 	public bool isInference;
 	public bool isTraining = true; 
@@ -69,15 +69,14 @@ public class Ball : Agent {
 			throwNumber = 0;
 			SetReward(0);
 
-			int numberofEnemies = Enemy.EnemiesAlive; 
+			numberofEnemies = Enemy.EnemiesAlive;
 			Debug.Log("n Enemies = " + numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
 
 			Debug.Log(Academy.Instance.StepCount + " OnEpisodeBegin called");
 
 			//initialise this?
 			// ActionSegment<float> previousAction;// Empty;
-
-			// episodeNeedsStarting = false;
+			episodeNeedsStarting = false;
 		}
 	}
 
@@ -119,7 +118,13 @@ public class Ball : Agent {
 		if (!isInference){
 			if (isPressed){
 				this.RequestDecision();
+
+				// if (previousAction == ActionSegment<float>.Empty){
+				// 	Debug.Log("weha?T" + previousAction);
+				// }
+				// else{
 				MoveAgent(previousAction);
+				// }
 			}
 		}
 	}
@@ -200,19 +205,23 @@ public class Ball : Agent {
 		yield return new WaitForSeconds(waitForEffectTime);
 		
 		throwNumber++;
-		RewardAgent();
 
 		Debug.Log("enemies still alive = "+ Enemy.EnemiesAlive);
 		if (Enemy.EnemiesAlive <= 0){Debug.Log("LEVEL WON!");}
 
 		Debug.Log("throw numbers = "+ throwNumber + " of " + numberOfThrows);
 		if (throwNumber==numberOfThrows){
+			RewardAgent();
 			Debug.Log("End Episode");
 			episodeNeedsStarting = true; // is this needed now the control flow is better?
 			// Enemy.EnemiesAlive = 0;   // is this needed if the whole scene restarts? 
 			EndEpisode(); // Auto starts another Episode
 		}
-		else{ ResetBall(); }
+		else{ 
+			ResetBall(); 
+			RewardAgent();
+		}
+		
 	}
 
 }
