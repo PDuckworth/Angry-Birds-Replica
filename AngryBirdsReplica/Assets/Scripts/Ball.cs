@@ -180,7 +180,7 @@ public class Ball : Agent {
 	void RewardAgent() {
 
 		Debug.Log("reward func:: n Enemies = " + numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
-		var killed = (numberofEnemies - Enemy.EnemiesAlive)/numberofEnemies; 
+		float killed = ((float)numberofEnemies - (float)Enemy.EnemiesAlive)/(float)numberofEnemies; 
 		
 		Debug.Log("Set reward = " + killed);
 		SetReward(killed); 
