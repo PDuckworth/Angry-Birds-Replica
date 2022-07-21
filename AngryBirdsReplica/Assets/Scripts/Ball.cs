@@ -41,8 +41,12 @@ public class Ball : Agent {
 
 	public bool isInference;
 	public bool isTraining = true; 
+	bool isPreviousActionSet = false;
 
 	void Start () {
+		/* Called on the frame when a script is enabled just before the Update method is called the first time.
+		Called exactly once in the lifetime of the script. */
+
 		rb = rb.GetComponent<Rigidbody2D>();
 		hook = hook.GetComponent<Rigidbody2D>();
 
@@ -64,7 +68,7 @@ public class Ball : Agent {
 
 	 public override void OnEpisodeBegin() {
 		if (episodeNeedsStarting){
-
+			Debug.Log(Academy.Instance.StepCount + " OnEpisodeBegin called");
 			ResetBall();
 			throwNumber = 0;
 			SetReward(0);
@@ -72,10 +76,6 @@ public class Ball : Agent {
 			numberofEnemies = Enemy.EnemiesAlive;
 			Debug.Log("n Enemies = " + numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
 
-			Debug.Log(Academy.Instance.StepCount + " OnEpisodeBegin called");
-
-			//initialise this?
-			// ActionSegment<float> previousAction;// Empty;
 			episodeNeedsStarting = false;
 		}
 	}
@@ -103,7 +103,7 @@ public class Ball : Agent {
 		// Debug.Log("action2 rec " + actionBuffers.ContinuousActions[1]);
 
 		previousAction = actionBuffers.ContinuousActions;
-
+		isPreviousActionSet = true;
 		if (isInference){
 			MoveAgent(actionBuffers.ContinuousActions);
 			StartCoroutine(Release());
@@ -112,32 +112,26 @@ public class Ball : Agent {
 
 
 	void Update(){
-		// This runs each Academy.step to allow us to drag the Agent
-		// It does not request excess decisions when in Inference mode
+		/* Called every frame if the MonoBehaviour is enabled.
+		it allow us to drag the Agent when not in Inference mode*/
 
 		if (!isInference){
 			if (isPressed){
 				this.RequestDecision();
 
-				// if (previousAction == ActionSegment<float>.Empty){
-				// 	Debug.Log("weha?T" + previousAction);
-				// }
-				// else{
-				MoveAgent(previousAction);
-				// }
+				if (isPreviousActionSet){MoveAgent(previousAction);}
 			}
 		}
 	}
 
 	public void MoveAgent(ActionSegment<float> action){
 
-			var mousePos = new Vector2(action[0], action[1]);
+		var mousePos = new Vector2(action[0], action[1]);
 
-			if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
-				rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
-			else
-				rb.position = mousePos;
-
+		if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
+			rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
+		else
+			rb.position = mousePos;
 	}
 
     public override void Heuristic(in ActionBuffers actionsOut)
