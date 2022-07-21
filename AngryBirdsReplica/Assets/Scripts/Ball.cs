@@ -63,6 +63,8 @@ public class Ball : Agent {
 		Debug.Log("enemy2 " +enemy2.position);
 
 		Debug.Log("isInference = " + isInference);
+
+		Academy.Instance.AutomaticSteppingEnabled = false;
 	}
 
 
@@ -84,14 +86,26 @@ public class Ball : Agent {
 	{
 		// %todo: When Enemies die, their position doesnt exist
 		// check if they are alive?  
-		if (useVecObs){
-			sensor.AddObservation(enemy1.transform.position);
-			sensor.AddObservation(enemy2.transform.position);
 
+		if (useVecObs){
+
+			if (enemy1 !is null){
+				sensor.AddObservation(enemy1.transform.position);
+			}
+			else{
+				sensor.AddObservation(Vector3.zero);
+			}
+			if (enemy2 !is null){
+				sensor.AddObservation(enemy2.transform.position);
+			}
+			else{
+				sensor.AddObservation(Vector3.zero);
+			}
 			// Debug.Log("collectObs = " + sensor);
 
 			if (isInference){
 				this.RequestDecision();
+				Academy.Instance.EnvironmentStep();
 			}
 		}
 	}
@@ -118,6 +132,7 @@ public class Ball : Agent {
 		if (!isInference){
 			if (isPressed){
 				this.RequestDecision();
+				Academy.Instance.EnvironmentStep();
 
 				if (isPreviousActionSet){MoveAgent(previousAction);}
 			}
