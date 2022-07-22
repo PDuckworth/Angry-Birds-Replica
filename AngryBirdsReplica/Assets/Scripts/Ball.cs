@@ -13,9 +13,9 @@ public class Ball : Agent {
 
 	public Rigidbody2D hook;
 
-	public static int m_numberofEnemies; 
+	public static int m_numberofEnemies = 2; 
 
-	public GameObject[] m_cachedEnemiesGO ; //= new Enemy[m_numberofEnemies];
+	public GameObject[] m_cachedEnemiesGO = new GameObject[m_numberofEnemies];
 
 	public static int EnemiesAlive;
 
@@ -62,9 +62,8 @@ public class Ball : Agent {
 		Debug.Log("behaviourType = " + behaviorType);
 
         m_ResetParams = Academy.Instance.EnvironmentParameters;
-		
-		m_numberofEnemies = 2; // Enemy.EnemiesAlive;
-		// m_cachedEnemiesGO = GameObject.FindGameObjectsWithTag("Enemy");
+
+		m_cachedEnemiesGO = GameObject.FindGameObjectsWithTag("Enemy");
 	}
 
 	 public override void OnEpisodeBegin() {
