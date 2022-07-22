@@ -80,13 +80,13 @@ public class Ball : Agent {
 		if (useVecObs){
 			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
-				if (enemyGO != null) { //.activeInHierarchy){
+				if (enemyGO.activeInHierarchy){
 					Debug.Log("OBS: " + enemyGO.name + " " + enemyGO.transform.position);
 					sensor.AddObservation(enemyGO.transform.position);
 					}
 				else { 
 					sensor.AddObservation(Vector3.zero);
-					Debug.Log("OBS dead");        		
+					Debug.Log("OBS dead");
 				}
     		}
 
@@ -237,6 +237,8 @@ public class Ball : Agent {
 				Debug.Log("RESPAWN = " + enemyGO.name);
 				enemyGO.GetComponent<Enemy>().Respawn();
 			}
+			enemyGO.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
+														Random.Range(-1.4f, -1.0f), 0);
 		}
 
 		terrain = GameObject.FindGameObjectsWithTag("Terrain");
