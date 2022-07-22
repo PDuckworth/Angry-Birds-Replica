@@ -10,7 +10,7 @@ public class Enemy : MonoBehaviour {
 
 	public static int EnemiesAlive = 0;
 	
-	public static int RewardGiven = 0;
+	// public static int RewardGiven = 0;
 
 	void Start ()
 	{
@@ -31,18 +31,17 @@ public class Enemy : MonoBehaviour {
 		Instantiate(deathEffect, transform.position, Quaternion.identity);
 
 		EnemiesAlive--;
-
-		RewardGiven++;
-		// Destroy(gameObject);
+		// RewardGiven++;
+		//Destroy(gameObject);
 		gameObject.SetActive(false);
 	}
 
-	void Respawn () 
+	public void Respawn () 
 	{
-		Destroy(deathEffect);
+		//Destroy(deathEffect);
+		deathEffect.SetActive(false);
 		EnemiesAlive++; 
 		gameObject.SetActive(true);
-		Debug.Log("restart enemy " + EnemiesAlive);
 
 	}
 }

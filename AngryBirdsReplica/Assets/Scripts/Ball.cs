@@ -15,7 +15,7 @@ public class Ball : Agent {
 
 	public static int m_numberofEnemies; 
 
-	public GameObject[] m_cached_enemies = new GameObject[m_numberofEnemies];
+	public GameObject[] m_cachedEnemiesGO ; //= new Enemy[m_numberofEnemies];
 
 	public static int EnemiesAlive;
 
@@ -27,7 +27,7 @@ public class Ball : Agent {
 
 	public float maxDragDistance = 3.0f;
 
-	public static int m_numberofThrows = 2;
+	public static int m_numberofThrows = 5;
 
 	int m_throwsRemaining = m_numberofThrows;
 
@@ -62,12 +62,10 @@ public class Ball : Agent {
 		Debug.Log("behaviourType = " + behaviorType);
 
         m_ResetParams = Academy.Instance.EnvironmentParameters;
-		m_cached_enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
-        // SetResetParameters();
-
+		
+		m_numberofEnemies = 2; // Enemy.EnemiesAlive;
+		// m_cachedEnemiesGO = GameObject.FindGameObjectsWithTag("Enemy");
 	}
-
 
 	 public override void OnEpisodeBegin() {
 		if (ResartEpisode){
@@ -80,19 +78,16 @@ public class Ball : Agent {
 
     public override void CollectObservations(VectorSensor sensor)
 	{
-		Debug.Log("collect obs");
 		if (useVecObs){
-
-			foreach(GameObject enemy in m_cached_enemies){
-				Debug.Log("Obs : " + enemy.name);
+			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
-				if (enemy.activeInHierarchy){
-					Debug.Log("enemy: " + enemy.name + " " + enemy.transform.position);
-					sensor.AddObservation(enemy.transform.position);
+				if (enemyGO != null) { //.activeInHierarchy){
+					Debug.Log("OBS: " + enemyGO.name + " " + enemyGO.transform.position);
+					sensor.AddObservation(enemyGO.transform.position);
 					}
 				else { 
 					sensor.AddObservation(Vector3.zero);
-					Debug.Log("enemy dead : zero obs");        		
+					Debug.Log("OBS dead");        		
 				}
     		}
 
@@ -124,15 +119,16 @@ public class Ball : Agent {
 		}
 
 		// if enemies are destroyed after some wait
-		float currentReward = ((float)m_numberofEnemies - (float)Enemy.EnemiesAlive)/(float)m_numberofEnemies;
-		if (m_currentReward < currentReward){
-			Debug.Log("someone is more dead");
-			RewardAgent();
-		}
+		// float currentReward = ((float)m_numberofEnemies - (float)Enemy.EnemiesAlive)/(float)m_numberofEnemies;
+		// if (m_currentReward + float.Epsilon < currentReward){
+		// 	Debug.Log("someone is more dead");
+		// 	RewardAgent();
+		// }
 
 		if (m_currentReward >= 1 || ResartEpisode){
 			Debug.Log("END END END");
 			EndEpisode();
+			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 			}
 
 	}
@@ -160,14 +156,12 @@ public class Ball : Agent {
 
 	void OnMouseDown ()
 	{
-		Debug.Log("down");
 		isPressed = true;
 		rb.isKinematic = true;
 	}
 
 	void OnMouseUp ()
 	{
-		Debug.Log("up");
 		isPressed = false;
 		rb.isKinematic = false;
 
@@ -221,7 +215,6 @@ public class Ball : Agent {
 		}
 		else {levelWon = false;};
 
-		
 		Debug.Log("throw: " + throwNumber + " of " + m_numberofThrows + ". Remaining = " + m_throwsRemaining);
 		if (m_throwsRemaining <= 0 || levelWon){
 			Debug.Log("End Episode");
@@ -236,23 +229,15 @@ public class Ball : Agent {
     {
 
 		m_currentReward = 0;
-		m_numberofEnemies = Enemy.EnemiesAlive;
-
 		m_throwsRemaining = m_numberofThrows; 
 		ResetBall();
 		SetReward(0);
 
-		// Respawn target to random location
-		foreach(GameObject enemy in m_cached_enemies){
-
-			Debug.Log("RESET PARAMS: " + enemy);
-
-			// enemy.SetActive(true);
-			if (enemy.activeInHierarchy){ Debug.Log("do nothing to me");}
-			else {enemy.Respawn();}
-
-			enemy.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
-														Random.Range(-1.4f, -1.0f), 0);
+		foreach (GameObject enemyGO in m_cachedEnemiesGO) {
+			if (!enemyGO.activeInHierarchy){
+				Debug.Log("RESPAWN = " + enemyGO.name);
+				enemyGO.GetComponent<Enemy>().Respawn();
+			}
 		}
 
 		terrain = GameObject.FindGameObjectsWithTag("Terrain");
