@@ -33,8 +33,8 @@ public class Enemy : MonoBehaviour {
 		EnemiesAlive--;
 
 		RewardGiven++;
-
 		Destroy(gameObject);
 	}
+
 
 }
