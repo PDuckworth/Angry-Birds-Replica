@@ -33,8 +33,16 @@ public class Enemy : MonoBehaviour {
 		EnemiesAlive--;
 
 		RewardGiven++;
-		Destroy(gameObject);
+		// Destroy(gameObject);
+		gameObject.SetActive(false);
 	}
 
+	void Respawn () 
+	{
+		Destroy(deathEffect);
+		EnemiesAlive++; 
+		gameObject.SetActive(true);
+		Debug.Log("restart enemy " + EnemiesAlive);
 
+	}
 }

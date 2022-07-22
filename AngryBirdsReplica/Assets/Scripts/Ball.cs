@@ -15,7 +15,7 @@ public class Ball : Agent {
 
 	public static int m_numberofEnemies; 
 
-	public GameObject[] enemies = new GameObject[m_numberofEnemies];
+	public GameObject[] m_cached_enemies = new GameObject[m_numberofEnemies];
 
 	public static int EnemiesAlive;
 
@@ -62,9 +62,9 @@ public class Ball : Agent {
 		Debug.Log("behaviourType = " + behaviorType);
 
         m_ResetParams = Academy.Instance.EnvironmentParameters;
+		m_cached_enemies = GameObject.FindGameObjectsWithTag("Enemy");
 
-		Debug.Log("Params"+ m_ResetParams);
-        SetResetParameters();
+        // SetResetParameters();
 
 	}
 
@@ -83,13 +83,16 @@ public class Ball : Agent {
 		Debug.Log("collect obs");
 		if (useVecObs){
 
-			foreach(GameObject enemy in enemies){
-
+			foreach(GameObject enemy in m_cached_enemies){
+				Debug.Log("Obs : " + enemy.name);
 				// if enemy is destroy, add zeros to sensor
-				if (enemy == null){sensor.AddObservation(Vector3.zero);}
+				if (enemy.activeInHierarchy){
+					Debug.Log("enemy: " + enemy.name + " " + enemy.transform.position);
+					sensor.AddObservation(enemy.transform.position);
+					}
 				else { 
-        		Debug.Log("enemy: " + enemy.name + " " + enemy.transform.position);
-				sensor.AddObservation(enemy.transform.position);
+					sensor.AddObservation(Vector3.zero);
+					Debug.Log("enemy dead : zero obs");        		
 				}
     		}
 
@@ -235,12 +238,19 @@ public class Ball : Agent {
 		m_currentReward = 0;
 		m_numberofEnemies = Enemy.EnemiesAlive;
 
+		m_throwsRemaining = m_numberofThrows; 
 		ResetBall();
 		SetReward(0);
 
-		// Move target to new spot
-		enemies = GameObject.FindGameObjectsWithTag("Enemy");
-		foreach(GameObject enemy in enemies){
+		// Respawn target to random location
+		foreach(GameObject enemy in m_cached_enemies){
+
+			Debug.Log("RESET PARAMS: " + enemy);
+
+			// enemy.SetActive(true);
+			if (enemy.activeInHierarchy){ Debug.Log("do nothing to me");}
+			else {enemy.Respawn();}
+
 			enemy.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
 														Random.Range(-1.4f, -1.0f), 0);
 		}
@@ -250,7 +260,7 @@ public class Ball : Agent {
 			wood.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
 														Random.Range(-1.4f, -1.0f), 0);
 		}
-        
+
     }
 
 }
