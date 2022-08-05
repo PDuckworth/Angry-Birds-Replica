@@ -81,12 +81,12 @@ public class Ball : Agent {
 			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
 				if (enemyGO.activeInHierarchy){
-					Debug.Log("OBS: " + enemyGO.name + " " + enemyGO.transform.position);
+					// Debug.Log("OBS: " + enemyGO.name + " " + enemyGO.transform.position);
 					sensor.AddObservation(enemyGO.transform.position);
 					}
 				else { 
 					sensor.AddObservation(Vector3.zero);
-					Debug.Log("OBS dead");
+					//Debug.Log("OBS dead");
 				}
     		}
 
@@ -99,7 +99,7 @@ public class Ball : Agent {
 
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-		Debug.Log("onActionReceived");
+		// Debug.Log("onActionReceived");
 		previousAction = actionBuffers.ContinuousActions;
 		isPreviousActionSet = true;
 		if (isInference){

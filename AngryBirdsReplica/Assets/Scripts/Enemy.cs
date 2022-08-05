@@ -16,6 +16,8 @@ public class Enemy : MonoBehaviour {
 	{
 		EnemiesAlive++;
 		Debug.Log("start enemy " + EnemiesAlive);
+		Instantiate(deathEffect, transform.position, Quaternion.identity);
+		deathEffect.SetActive(false);
 	}
 
 	void OnCollisionEnter2D (Collision2D colInfo)
@@ -28,20 +30,20 @@ public class Enemy : MonoBehaviour {
 
 	void Die ()
 	{
-		Instantiate(deathEffect, transform.position, Quaternion.identity);
-
+		gameObject.SetActive(false);
+		deathEffect.SetActive(true);
 		EnemiesAlive--;
 		// RewardGiven++;
 		//Destroy(gameObject);
-		gameObject.SetActive(false);
 	}
 
 	public void Respawn () 
 	{
+		gameObject.SetActive(true);
 		//Destroy(deathEffect);
 		deathEffect.SetActive(false);
 		EnemiesAlive++; 
-		gameObject.SetActive(true);
+		
 
 	}
 }
