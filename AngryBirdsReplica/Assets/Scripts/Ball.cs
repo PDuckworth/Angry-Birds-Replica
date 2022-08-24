@@ -23,9 +23,9 @@ public class Ball : Agent {
 
 	public float releaseTime = .1f;
 
-	float m_waitForEffect = 3.0f;
+	float m_waitForEffect = 5.0f;
 
-	public float maxDragDistance = 3.0f;
+	public float maxDragDistance = 4.0f;
 
 	public static int m_numberofThrows = 5;
 
@@ -41,10 +41,12 @@ public class Ball : Agent {
 
 	ActionSegment<float> previousAction = ActionSegment<float>.Empty;
 
-	public bool isInference;
+	bool isInference = true;
 	public bool isTraining = true; 
 	bool isPreviousActionSet = false;
 	bool levelWon = false;
+	bool ballReset = false;
+
 
 	EnvironmentParameters m_ResetParams;
 	Unity.MLAgents.Policies.BehaviorType behaviorType;
@@ -56,7 +58,7 @@ public class Ball : Agent {
 		rb = rb.GetComponent<Rigidbody2D>();
 		hook = hook.GetComponent<Rigidbody2D>();
 
-		isInference = GetComponent<BehaviorParameters>().BehaviorType == BehaviorType.InferenceOnly;
+		/* isInference = GetComponent<BehaviorParameters>().BehaviorType == BehaviorType.InferenceOnly;*/
 
 		Debug.Log("isInference = " + isInference);
 		Debug.Log("behaviourType = " + behaviorType);
@@ -72,12 +74,14 @@ public class Ball : Agent {
 			SetResetParameters();
 			ResartEpisode = false;
 			Debug.Log("n Enemies = " + m_numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
+
 		}
 	}
 
     public override void CollectObservations(VectorSensor sensor)
 	{
 		if (useVecObs){
+			Debug.Log(">>CollectObservations");
 			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
 				if (enemyGO.activeInHierarchy){
@@ -89,17 +93,13 @@ public class Ball : Agent {
 					//Debug.Log("OBS dead");
 				}
     		}
-
-			if (isInference){
-				this.RequestDecision();
-			}
 		}
 	}
 
 
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-		// Debug.Log("onActionReceived");
+		Debug.Log(">>onActionReceived");
 		previousAction = actionBuffers.ContinuousActions;
 		isPreviousActionSet = true;
 		if (isInference){
@@ -116,6 +116,12 @@ public class Ball : Agent {
 				RequestDecision();
 				if (isPreviousActionSet){MoveAgent(previousAction);}
 		}
+		else
+			if (ballReset && m_throwsRemaining >= 1){
+				Debug.Log("Request Throw");
+				this.RequestDecision();
+			}
+			
 
 		// if enemies are destroyed after some wait
 		// float currentReward = ((float)m_numberofEnemies - (float)Enemy.EnemiesAlive)/(float)m_numberofEnemies;
@@ -180,6 +186,8 @@ public class Ball : Agent {
 		// reattach the spring
 		GetComponent<SpringJoint2D>().enabled = true;
 		this.enabled = true;
+
+		ballReset=true;
 	}
 
 	void RewardAgent() {
@@ -220,6 +228,8 @@ public class Ball : Agent {
 			ResartEpisode = true; // is this needed now the control flow is better?
 			// EndEpisode(); // Auto starts another Episode
 		}
+
+
 		RewardAgent();
 		ResetBall(); 
 	}
