@@ -2,22 +2,22 @@
     "AgentBehavior": {
         "checkpoints": [
             {
-                "steps": 14,
-                "file_path": "results/test2/AgentBehavior/AgentBehavior-14.onnx",
+                "steps": 509,
+                "file_path": "results/test15/AgentBehavior/AgentBehavior-509.onnx",
                 "reward": 0.0,
-                "creation_time": 1661341714.6902423,
+                "creation_time": 1661878315.5368,
                 "auxillary_file_paths": [
-                    "results/test2/AgentBehavior/AgentBehavior-14.pt"
+                    "results/test15/AgentBehavior/AgentBehavior-509.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 14,
-            "file_path": "results/test2/AgentBehavior.onnx",
+            "steps": 509,
+            "file_path": "results/test15/AgentBehavior.onnx",
             "reward": 0.0,
-            "creation_time": 1661341714.6902423,
+            "creation_time": 1661878315.5368,
             "auxillary_file_paths": [
-                "results/test2/AgentBehavior/AgentBehavior-14.pt"
+                "results/test15/AgentBehavior/AgentBehavior-509.pt"
             ]
         }
     },

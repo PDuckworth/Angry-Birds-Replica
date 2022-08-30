@@ -13,7 +13,7 @@ public class Ball : Agent {
 
 	public Rigidbody2D hook;
 
-	public static int m_numberofEnemies = 2; 
+	public static int m_numberofEnemies = 1; 
 
 	public GameObject[] m_cachedEnemiesGO = new GameObject[m_numberofEnemies];
 
@@ -39,14 +39,14 @@ public class Ball : Agent {
 
  	public bool useVecObs;
 
-	ActionSegment<float> previousAction = ActionSegment<float>.Empty;
-
+	// ActionSegment<float> previousAction = ActionSegment<float>.Empty;
+	public Vector2 previousAction = Vector2.zero;
 	bool isInference = true;
 	public bool isTraining = true; 
 	bool isPreviousActionSet = false;
 	bool levelWon = false;
 	bool ballReset = false;
-
+	float m_totalRewards = 0;
 
 	EnvironmentParameters m_ResetParams;
 	Unity.MLAgents.Policies.BehaviorType behaviorType;
@@ -58,7 +58,9 @@ public class Ball : Agent {
 		rb = rb.GetComponent<Rigidbody2D>();
 		hook = hook.GetComponent<Rigidbody2D>();
 
-		/* isInference = GetComponent<BehaviorParameters>().BehaviorType == BehaviorType.InferenceOnly;*/
+		/*If you want to control the agent manually, change to HEURISTIC ONLY*/
+		if (GetComponent<BehaviorParameters>().BehaviorType == BehaviorType.HeuristicOnly)
+			isInference = false;
 
 		Debug.Log("isInference = " + isInference);
 		Debug.Log("behaviourType = " + behaviorType);
@@ -81,7 +83,7 @@ public class Ball : Agent {
     public override void CollectObservations(VectorSensor sensor)
 	{
 		if (useVecObs){
-			Debug.Log(">>CollectObservations");
+			// Debug.Log(">>CollectObservations");
 			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
 				if (enemyGO.activeInHierarchy){
@@ -99,11 +101,24 @@ public class Ball : Agent {
 
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-		Debug.Log(">>onActionReceived");
-		previousAction = actionBuffers.ContinuousActions;
+		// Debug.Log(">>onActionReceived");
+		Debug.Log("RAW Action: " + actionBuffers.ContinuousActions[0] + ",  " + actionBuffers.ContinuousActions[1]);
+
 		isPreviousActionSet = true;
-		if (isInference){
-			MoveAgent(actionBuffers.ContinuousActions);
+		if (!isInference){
+			previousAction[0] = actionBuffers.ContinuousActions[0];
+			previousAction[1] = actionBuffers.ContinuousActions[1];
+		}
+		else{
+			previousAction[0] = actionBuffers.ContinuousActions[0]*10 + hook.position[0];
+			previousAction[1] = actionBuffers.ContinuousActions[1]*10 + hook.position[1];
+
+			// If Heuristic: mouse position defines movement whereas
+			// If Inference Mode: action defines movement relative to hook
+			Debug.Log("SCALED Action: " + previousAction[0] + ",  " + previousAction[1]);
+
+			// MoveAgent(actionBuffers.ContinuousActions);
+			MoveAgent(previousAction);
 			StartCoroutine(Release());
 		}
 	}
@@ -118,7 +133,7 @@ public class Ball : Agent {
 		}
 		else
 			if (ballReset && m_throwsRemaining >= 1){
-				Debug.Log("Request Throw");
+				// Debug.Log("Request Throw");
 				this.RequestDecision();
 			}
 			
@@ -131,7 +146,7 @@ public class Ball : Agent {
 		// }
 
 		if (m_currentReward >= 1 || ResartEpisode){
-			Debug.Log("END END END");
+			// Debug.Log("END END END");
 			EndEpisode();
 			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 			}
@@ -140,14 +155,16 @@ public class Ball : Agent {
 
 
 	// does the actual moving of the GameObject
-	public void MoveAgent(ActionSegment<float> action){
+	// public void MoveAgent(ActionSegment<float> action){
+	public void MoveAgent(Vector2 mousePos){
 		// Debug.Log("MoveAgent Step: " + Academy.Instance.StepCount);
-		var mousePos = new Vector2(action[0], action[1]);
+
+		// var mousePos = new Vector2(action[0], action[1]);
 
 		if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
-			rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;
+			{rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;}
 		else
-			rb.position = mousePos;
+			{rb.position = mousePos;}
 	}
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -176,7 +193,7 @@ public class Ball : Agent {
 
 	public void ResetBall(){
 
-		Debug.Log("reset ball");
+		// Debug.Log("reset ball");
 
 		// reset ball position
 		rb.velocity = Vector2.zero;
@@ -196,11 +213,14 @@ public class Ball : Agent {
 		m_currentReward = ((float)m_numberofEnemies - (float)Enemy.EnemiesAlive)/(float)m_numberofEnemies; 
 		Debug.Log("Set reward = " + m_currentReward);
 		SetReward(m_currentReward); 
+
+		m_totalRewards += m_currentReward; // Check that we ever receive rewards
 	}
 
 	// Releases the ball
 	IEnumerator Release () {
 		int throwNumber = m_numberofThrows - m_throwsRemaining +1;
+		
 		Debug.Log("Throw: " + throwNumber + " = (" + previousAction[0] + ", " + previousAction[1] + ")");
 		m_throwsRemaining -= 1;
 
@@ -222,9 +242,10 @@ public class Ball : Agent {
 		}
 		else {levelWon = false;};
 
-		Debug.Log("throw: " + throwNumber + " of " + m_numberofThrows + ". Remaining = " + m_throwsRemaining);
+		// Debug.Log("throw: " + throwNumber + " of " + m_numberofThrows + ". Remaining = " + m_throwsRemaining);
 		if (m_throwsRemaining <= 0 || levelWon){
-			Debug.Log("End Episode");
+			Debug.Log("End Episode " + " Reward so far = " + m_totalRewards);
+
 			ResartEpisode = true; // is this needed now the control flow is better?
 			// EndEpisode(); // Auto starts another Episode
 		}
@@ -243,12 +264,13 @@ public class Ball : Agent {
 		SetReward(0);
 
 		foreach (GameObject enemyGO in m_cachedEnemiesGO) {
+
 			if (!enemyGO.activeInHierarchy){
 				Debug.Log("RESPAWN = " + enemyGO.name);
 				enemyGO.GetComponent<Enemy>().Respawn();
 			}
-			enemyGO.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
-														Random.Range(-1.4f, -1.0f), 0);
+			// enemyGO.transform.localPosition = new Vector3(Random.Range(0.0f, 10.0f), 
+														// Random.Range(-1.4f, -1.0f), 0);
 		}
 
 		terrain = GameObject.FindGameObjectsWithTag("Terrain");
