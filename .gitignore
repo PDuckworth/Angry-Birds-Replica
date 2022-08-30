@@ -6,6 +6,7 @@
 [Oo]bj/
 3rdParty/
 Builds/
+*results/
 
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
