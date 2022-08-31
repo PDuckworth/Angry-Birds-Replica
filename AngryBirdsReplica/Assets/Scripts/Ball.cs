@@ -36,15 +36,12 @@ public class Ball : Agent {
 	float m_currentReward = 0; 
 
 	public bool ResartEpisode = true;  // strange behaviour: calls EpisodeBegin too often
-
  	public bool useVecObs;
 
-	// ActionSegment<float> previousAction = ActionSegment<float>.Empty;
-	public Vector2 previousAction = Vector2.zero;
+	// ActionSegment<float> Action = ActionSegment<float>.Empty;
+	public Vector2 Action = Vector2.zero;
 	bool isInference = true;
-	public bool isTraining = true; 
-	bool isPreviousActionSet = false;
-	bool levelWon = false;
+	bool isActionSet = false;
 	bool ballReset = false;
 	float m_totalRewards = 0;
 
@@ -55,18 +52,19 @@ public class Ball : Agent {
 		/* Called on the frame when a script is enabled just before the Update method is called the first time.
 		Called exactly once in the lifetime of the script. */
 
+		// Called multiple times for Inference with Model loaded?
+
 		rb = rb.GetComponent<Rigidbody2D>();
 		hook = hook.GetComponent<Rigidbody2D>();
 
-		/*If you want to control the agent manually, change to HEURISTIC ONLY*/
+		/*If you want to control the agent manually, change Agent to HEURISTIC ONLY*/
 		if (GetComponent<BehaviorParameters>().BehaviorType == BehaviorType.HeuristicOnly)
 			isInference = false;
 
 		Debug.Log("isInference = " + isInference);
 		Debug.Log("behaviourType = " + behaviorType);
 
-        m_ResetParams = Academy.Instance.EnvironmentParameters;
-
+		m_ResetParams = Academy.Instance.EnvironmentParameters;
 		m_cachedEnemiesGO = GameObject.FindGameObjectsWithTag("Enemy");
 	}
 
@@ -76,14 +74,13 @@ public class Ball : Agent {
 			SetResetParameters();
 			ResartEpisode = false;
 			Debug.Log("n Enemies = " + m_numberofEnemies + " n Enemies Alive = " + Enemy.EnemiesAlive);
-
 		}
 	}
 
     public override void CollectObservations(VectorSensor sensor)
 	{
 		if (useVecObs){
-			// Debug.Log(">>CollectObservations");
+			Debug.Log(">>CollectObservations");
 			foreach(GameObject enemyGO in m_cachedEnemiesGO){
 				// if enemy is destroy, add zeros to sensor
 				if (enemyGO.activeInHierarchy){
@@ -101,66 +98,73 @@ public class Ball : Agent {
 
     public override void OnActionReceived(ActionBuffers actionBuffers)
     {
-		// Debug.Log(">>onActionReceived");
-		Debug.Log("RAW Action: " + actionBuffers.ContinuousActions[0] + ",  " + actionBuffers.ContinuousActions[1]);
+		Debug.Log(">>onActionReceived");
+		// Debug.Log("RAW Action: " + actionBuffers.ContinuousActions[0] + ",  " + actionBuffers.ContinuousActions[1]);
 
-		isPreviousActionSet = true;
+		isActionSet = true;
+
 		if (!isInference){
-			previousAction[0] = actionBuffers.ContinuousActions[0];
-			previousAction[1] = actionBuffers.ContinuousActions[1];
+			// If Heuristic: mouse position defines movement
+			Action[0] = actionBuffers.ContinuousActions[0];
+			Action[1] = actionBuffers.ContinuousActions[1];
 		}
 		else{
-			previousAction[0] = actionBuffers.ContinuousActions[0]*10 + hook.position[0];
-			previousAction[1] = actionBuffers.ContinuousActions[1]*10 + hook.position[1];
+			// If Inference or Training Mode: action defines movement relative to hook position
+			var ActionScale = 10;
+			Action[0] = actionBuffers.ContinuousActions[0]*ActionScale + hook.position[0];
+			Action[1] = actionBuffers.ContinuousActions[1]*ActionScale + hook.position[1];
+			// Debug.Log("SCALED Action: " + Action[0] + ",  " + Action[1]);
 
-			// If Heuristic: mouse position defines movement whereas
-			// If Inference Mode: action defines movement relative to hook
-			Debug.Log("SCALED Action: " + previousAction[0] + ",  " + previousAction[1]);
-
-			// MoveAgent(actionBuffers.ContinuousActions);
-			MoveAgent(previousAction);
-			StartCoroutine(Release());
+			// // MoveAgent(actionBuffers.ContinuousActions);
+			// MoveAgent(Action);
+			// StartCoroutine(Release());
 		}
 	}
+
+
 
 	// Called every frame to drag the Agent when not in Inference mode
 	void Update(){
 
-		// Debug.Log("Update");
+		// If Heuristic Mode: rely on Mouse Actions
 		if (!isInference && isPressed){
 				RequestDecision();
-				if (isPreviousActionSet){MoveAgent(previousAction);}
+				if (isActionSet){MoveAgent(Action);}  // Release() on MouseUp
 		}
 		else
 			if (ballReset && m_throwsRemaining >= 1){
-				// Debug.Log("Request Throw");
+				Debug.Log("Request Throw");
 				this.RequestDecision();
+				if (isActionSet){
+					MoveAgent(Action);
+					StartCoroutine(Release());
+					
+				}
 			}
-			
 
-		// if enemies are destroyed after some wait
-		// float currentReward = ((float)m_numberofEnemies - (float)Enemy.EnemiesAlive)/(float)m_numberofEnemies;
-		// if (m_currentReward + float.Epsilon < currentReward){
-		// 	Debug.Log("someone is more dead");
-		// 	RewardAgent();
-		// }
+		Debug.Log("enemies still alive = "+ Enemy.EnemiesAlive);
+		// Debug.Log("throw: " + throwNumber + " of " + m_numberofThrows + ". Remaining = " + m_throwsRemaining);
 
-		if (m_currentReward >= 1 || ResartEpisode){
-			// Debug.Log("END END END");
+		// Criteria to end episode early
+		if (m_throwsRemaining <= 0 || Enemy.EnemiesAlive <= 0){
+			Debug.Log("End Episode " + " Sum of Rewards = " + m_totalRewards);
+			ResartEpisode = true; 
+		}
+
+		if (ResartEpisode || m_currentReward >= 1){
+			Debug.Log("END END END Episode");
 			EndEpisode();
-			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+			// SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+			// Debug.Log("HERE?");
 			}
 
+		//todo: check the y component of Enemies - if it rolls off the Ground it never stops falling.
 	}
 
 
 	// does the actual moving of the GameObject
 	// public void MoveAgent(ActionSegment<float> action){
 	public void MoveAgent(Vector2 mousePos){
-		// Debug.Log("MoveAgent Step: " + Academy.Instance.StepCount);
-
-		// var mousePos = new Vector2(action[0], action[1]);
-
 		if (Vector3.Distance(mousePos, hook.position) > maxDragDistance)
 			{rb.position = hook.position + (mousePos - hook.position).normalized * maxDragDistance;}
 		else
@@ -169,8 +173,6 @@ public class Ball : Agent {
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-		isTraining = false; // if Heuristic function is called: the agent is not training
-
 		var continuousActionsOut = actionsOut.ContinuousActions;
 		continuousActionsOut[0] = Camera.main.ScreenToWorldPoint(Input.mousePosition)[0];
 		continuousActionsOut[1] = Camera.main.ScreenToWorldPoint(Input.mousePosition)[1];
@@ -217,39 +219,36 @@ public class Ball : Agent {
 		m_totalRewards += m_currentReward; // Check that we ever receive rewards
 	}
 
+    public static class WaitFor
+    {
+        public static IEnumerator Frames(int frameCount)
+        {
+ 
+            while (frameCount > 0)
+            {
+                frameCount--;
+                yield return null;
+            }
+        }
+    }
+
+
 	// Releases the ball
 	IEnumerator Release () {
-		int throwNumber = m_numberofThrows - m_throwsRemaining +1;
-		
-		Debug.Log("Throw: " + throwNumber + " = (" + previousAction[0] + ", " + previousAction[1] + ")");
-		m_throwsRemaining -= 1;
 
 		// After the action is taken: Release the spring
-		yield return new WaitForSeconds(releaseTime);
+		yield return StartCoroutine(WaitFor.Frames(1));
+		// yield return new WaitForSeconds(releaseTime);
 		GetComponent<SpringJoint2D>().enabled = false;
 		this.enabled = false;
 		
 		// wait for effect, then reset/reward 
-		//if (m_waitForEffect>=0f){m_waitForEffect -= Time.fixedDeltaTime;} // count down between actions
-		yield return new WaitForSeconds(m_waitForEffect);
+		yield return StartCoroutine(WaitFor.Frames(20));
+		// yield return new WaitForSeconds(m_waitForEffect);
 		
-		// Academy.Instance.EnvironmentStep();  // evolve the env step
-
-		Debug.Log("enemies still alive = "+ Enemy.EnemiesAlive);
-		if (Enemy.EnemiesAlive <= 0){
-			Debug.Log("LEVEL WON!");
-			levelWon = true;
-		}
-		else {levelWon = false;};
-
-		// Debug.Log("throw: " + throwNumber + " of " + m_numberofThrows + ". Remaining = " + m_throwsRemaining);
-		if (m_throwsRemaining <= 0 || levelWon){
-			Debug.Log("End Episode " + " Reward so far = " + m_totalRewards);
-
-			ResartEpisode = true; // is this needed now the control flow is better?
-			// EndEpisode(); // Auto starts another Episode
-		}
-
+		int throwNumber = m_numberofThrows - m_throwsRemaining +1;
+		Debug.Log("Throw: " + throwNumber + " = (" + Action[0] + ", " + Action[1] + ")");
+		m_throwsRemaining -= 1;
 
 		RewardAgent();
 		ResetBall(); 
@@ -257,7 +256,6 @@ public class Ball : Agent {
 
 	public void SetResetParameters()
     {
-
 		m_currentReward = 0;
 		m_throwsRemaining = m_numberofThrows; 
 		ResetBall();
